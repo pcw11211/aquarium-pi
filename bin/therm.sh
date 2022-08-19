@@ -13,8 +13,6 @@
 #done
 
 
-
-
 #while true; do
 
 
@@ -23,7 +21,14 @@ temp_f=$(echo "scale=2; $temp_c * 9.0 / 5.0 + 32.0" | bc )
 
 #echo -n -e "\r"
 
-echo "$temp_c C - $temp_f F" 
+
+if [ "$1" == "C" ] || [ "$1" == "c" ] ; then
+  echo "$temp_c"
+else
+  echo "$temp_f"
+fi
+
+
 
 #echo -n -e "   "
 
