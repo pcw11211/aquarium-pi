@@ -1,21 +1,27 @@
 #!/bin/bash
 
+time_now=$(date +%s)
+
 printSection()
 {
   section="$1"
-  found=false
-  while read line
-  do
-    [[ $found == false && "$line" != "[$section]" ]] &&  continue
-    [[ $found == true && "${line:0:1}" = '[' ]] && break
-    found=true
-    [[  $found == true &&  "$line" == "[$section]" ]] &&  continue
-    echo $line
-    #echo 123
-    #string="$(echo $line)"
-    #string=$(echo "$string" | sed 1d)
-    #echo $string
-  done
+  file="$2"
+
+  if [ "$(echo $file | rev | cut -d'.' -f 1 | rev )" == "conf" ];then 
+    found=false
+    while read line
+    do
+      [[ $found == false && "$line" != "[$section]" ]] &&  continue
+      [[ $found == true && "${line:0:1}" = '[' ]] && break
+      found=true
+      [[  $found == true &&  "$line" == "[$section]" ]] &&  continue
+      echo $line
+      #echo 123
+      #string="$(echo $line)"
+      #string=$(echo "$string" | sed 1d)
+      #echo $string
+    done<<<$(cat $file)
+  fi
 }
 
 
@@ -26,27 +32,40 @@ PATH=$PATH:$my_path/bin
 #echo $PATH
 
 
+for arg in "$@"
+do
+  #echo "$var"
+  if [ "$arg" == "log" ] || [ "$arg" == "logs" ]; then logging=true; fi
+done
+
+
+
+
 for FILE in $my_path/sensors/*; do
-  #echo $FILE;
+#   echo $FILE;
 #  printSection name <$FILE
-  sensor_name="$(printSection name <$FILE)"
+  sensor_name="$(printSection name $FILE)"
 #  echo "$sensor_name"
 
-  sensor_desc="$(printSection description <$FILE)"
+  sensor_desc="$(printSection description $FILE)"
   echo "$sensor_name ($sensor_desc)"
 
-  sensor_exec=$(printSection "exec" <$FILE)
-#  echo $my_path/bin/$sensor_exec
+  sensor_exec=$(printSection "exec" $FILE)
+  echo $my_path/bin/$sensor_exec
 
-  sensor_value=$($sensor_exec)
-  if [ "$?" != 0 ];then
+  $sensor_exec >> /dev/null 2>&1
+  OUT=$?
+  echo "OUT=$OUT"
+  if [ "$OUT" != "0" ];then
     sensor_value="NA"
+  else
+    sensor_value=$($sensor_exec)
   fi
 
 #  echo $sensor_value
 
   #printSection alarm  <$FILE
-  sensor_test="$(printSection test <$FILE)"
+  sensor_test="$(printSection test $FILE)"
   #echo "$sensor_test"
 
 #  echo $sensor_value$sensor_test
@@ -81,7 +100,10 @@ for FILE in $my_path/sensors/*; do
 
 
   #save data to logs
-  echo "$(date +%s),${sensor_value}" >> $my_path/logs/${sensor_name}.log
+  if [ "$logging" == true ]; then
+    echo "${time_now},${sensor_value}" >> $my_path/logs/${sensor_name}.log
+  fi
 
 done
+
 
