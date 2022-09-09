@@ -35,7 +35,8 @@ PATH=$PATH:$my_path/bin
 for arg in "$@"
 do
   #echo "$var"
-  if [ "$arg" == "log" ] || [ "$arg" == "logs" ]; then logging=true; fi
+  if [ "$arg" == "log" ]   || [ "$arg" == "logs" ]; then logging=true;  fi
+  if [ "$arg" == "debug" ] || [ "$arg" == "d" ];    then debuging=true; fi
 done
 
 
@@ -51,11 +52,11 @@ for FILE in $my_path/sensors/*; do
   echo "$sensor_name ($sensor_desc)"
 
   sensor_exec=$(printSection "exec" $FILE)
-  echo $my_path/bin/$sensor_exec
+  if [ $debuging ]; then echo $my_path/bin/$sensor_exec; fi
 
-  $sensor_exec >> /dev/null 2>&1
+  $sensor_exec &> /dev/null
   OUT=$?
-  echo "OUT=$OUT"
+  if [ $debuging ]; then echo "OUT=$OUT"; fi
   if [ "$OUT" != "0" ];then
     sensor_value="NA"
   else
@@ -69,17 +70,21 @@ for FILE in $my_path/sensors/*; do
   #echo "$sensor_test"
 
 #  echo $sensor_value$sensor_test
-  sensor_test_out=good
-  #for test in $sensor_test; do
+  if [ "${sensor_value}" == "NA" ]; then 
+    sensor_test_out=error
+  else
+    sensor_test_out=none
+  fi
 
 
   #IFS=$'\n';for line in $sensor_test ; do
   #echo "$sensor_test"# |# while read line ; do
   while read line ; do
     #echo testing [ ${sensor_value} ${line} ]
-
-    if [ ${sensor_value} ${line} ] ; then
+    if [ "${line}" == "" ]; then continue; fi
+    if [ ${sensor_value} ${line} ] && [ "$sensor_test_out" != "error" ] ; then
       echo "good=${sensor_value} ${line}" >>/dev/null
+      sensor_test_out=good
       #echo $sensor_test_out
     else
       echo "error=${sensor_value} ${line}" >>/dev/null
@@ -88,17 +93,27 @@ for FILE in $my_path/sensors/*; do
     fi
   done<<<$sensor_test
 
+  #value dispaly setup
+  sensor_display=$(printSection "value display" $FILE)
+  if [ $debuging ]; then echo $sensor_display; fi
+  if [ "$sensor_display" != "" ];then
+    sensor_display=$( echo $sensor_display | sed 's#$value#'"${sensor_value}"'#')
+    #echo $sensor_display
+    sensor_value=$($sensor_display)
+  fi
 
+  color=''
   if [ "$sensor_test_out" == "good" ];then
     color='\033[0;32m'
-  else
+  elif [ "$sensor_test_out" == "error" ];then
     color='\033[0;31m'
+  else
+    color=''
   fi
   NC='\033[0m' # No Color
   echo -e "${color}${sensor_value}${NC}"
   echo
-
-
+  
   #save data to logs
   if [ "$logging" == true ]; then
     echo "${time_now},${sensor_value}" >> $my_path/logs/${sensor_name}.log
