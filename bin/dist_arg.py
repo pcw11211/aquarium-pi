@@ -11,11 +11,11 @@ import time
 #if len(sys.argv) > 1:
 #  ser_dev = sys.argv[1]
 
-#if len(sys.argv) == 1:
-avg_count = 20
+if len(sys.argv) == 1:
+  avg_count = 5
 
-#if len(sys.argv) > 1:
-#  avg_count = int(sys.argv[1])
+if len(sys.argv) > 1:
+  avg_count = int(sys.argv[1])
 
 
 
@@ -35,7 +35,7 @@ try:
 except  Exception as e:
     #print("Error open serial port: " + str(e) )
     print(e)
-    exit(1)
+    exit()
 
 
 
@@ -56,7 +56,9 @@ count=1
 #    print(ser.read(7))
 
 dist=[]
-for x in range(0, avg_count):
+#for x in range(0, avg_count):
+x = 0
+while ( x < avg_count):
   ser.flush()
   ser.flushInput()
   ser.flushOutput()
@@ -74,10 +76,15 @@ for x in range(0, avg_count):
 #  print(dec)
 #  print(dec,end=',')
 
-#  sys.stdout.write(str(dec) + ',')
+  if dec == 65535 :
+#    x=x-1
+    continue
+
+#  sys.stdout.write(str(x) + ":" + str(dec) + ',')
 #  sys.stdout.flush()
   dist.append(dec)
   ser.flush()
+  x += 1
 
 #print()
 #print(str(dist))

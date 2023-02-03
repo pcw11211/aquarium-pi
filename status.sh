@@ -77,11 +77,10 @@ for FILE in $my_path/sensors/*; do
   fi
 
 
-  #IFS=$'\n';for line in $sensor_test ; do
-  #echo "$sensor_test"# |# while read line ; do
   while read line ; do
     #echo testing [ ${sensor_value} ${line} ]
     if [ "${line}" == "" ]; then continue; fi
+    if [ "${sensor_value}" == "NA" ]; then continue ; fi 
     if [ ${sensor_value} ${line} ] && [ "$sensor_test_out" != "error" ] ; then
       echo "good=${sensor_value} ${line}" >>/dev/null
       sensor_test_out=good
