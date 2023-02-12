@@ -81,13 +81,14 @@ for FILE in $my_path/sensors/*; do
     echo testing [ ${sensor_value} ${line} ]
     if [ "${line}" == "" ]; then continue; fi
     if [ "${sensor_value}" == "NA" ]; then continue ; fi 
-    if [ $(echo "${sensor_value} ${line}" | bc) ] && [ "$sensor_test_out" != "error" ] ; then
+    if [ $(echo "${sensor_value} ${line}" | bc) == 1 ] && [ "$sensor_test_out" != "error" ] ; then
       echo "good=${sensor_value} ${line}" >>/dev/null
       sensor_test_out=good
       #echo $sensor_test_out
     else
       echo "error=${sensor_value} ${line}" >>/dev/null
       sensor_test_out=error
+      sensor_test_line="${line}"
       #echo $sensor_test_out
     fi
   done<<<$sensor_test
