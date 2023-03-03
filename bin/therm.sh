@@ -18,6 +18,10 @@
 
 temp_c=$(echo "scale=2; $(cat /sys/bus/w1/devices/28-3c89f64845f4/w1_slave | grep 't=' | cut -d '=' -f2) / 1000" |bc)
 
+if [ "$?" == "1" ]; then
+  exit 1
+fi
+
 if [ -z "$temp_c" ]; then
   #echo not set
   exit 1
@@ -32,6 +36,7 @@ if [ "$1" == "C" ] || [ "$1" == "c" ] ; then
   echo "$temp_c"
 else
   echo "$temp_f"
+#  exit 1
 fi
 
 

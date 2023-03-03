@@ -54,13 +54,15 @@ for FILE in $my_path/sensors/*; do
   sensor_exec=$(printSection "exec" $FILE)
   if [ $debuging ]; then echo $my_path/bin/$sensor_exec; fi
 
-  $sensor_exec &> /dev/null
+#  $sensor_exec &> /dev/null
+  sensor_value=$($sensor_exec 2>&1)
   OUT=$?
   if [ $debuging ]; then echo "OUT=$OUT"; fi
   if [ "$OUT" != "0" ];then
+    sensor_value_error=$sensor_value
     sensor_value="NA"
-  else
-    sensor_value=$($sensor_exec)
+#  else
+#    sensor_value=$($sensor_exec)
   fi
 
 #  echo $sensor_value
@@ -78,26 +80,26 @@ for FILE in $my_path/sensors/*; do
 
 
   while read line ; do
-    echo testing [ ${sensor_value} ${line} ]
+    if [ $debuging ]; then echo testing [ ${sensor_value} ${line} ]; fi
     if [ "${line}" == "" ]; then continue; fi
     if [ "${sensor_value}" == "NA" ]; then continue ; fi 
     if [ $(echo "${sensor_value} ${line}" | bc) == 1 ] && [ "$sensor_test_out" != "error" ] ; then
-      echo "good=${sensor_value} ${line}" >>/dev/null
       sensor_test_out=good
       #echo $sensor_test_out
     else
-      echo "error=${sensor_value} ${line}" >>/dev/null
       sensor_test_out=error
       sensor_test_line="${line}"
       #echo $sensor_test_out
     fi
   done<<<$sensor_test
-  echo $sensor_test_out
+  if [ $debuging ]; then echo $sensor_test_out; fi
+
+
 
   #value dispaly setup
   sensor_display=$(printSection "value display" $FILE)
   if [ $debuging ]; then echo $sensor_display; fi
-  if [ "$sensor_display" != "" ];then
+  if [ "$sensor_display" != "" ] && [ "$sensor_value" != "NA" ];then
     sensor_display=$( echo $sensor_display | sed 's#$value#'"${sensor_value}"'#')
     #echo $sensor_display
     sensor_value=$($sensor_display)
@@ -163,12 +165,19 @@ for FILE in $my_path/sensors/*; do
     email_content="$(cat $my_path/email.template)"
 #    echo "$email_content"
 #    email_content="$(echo "$email_content")"
+    email_content="$(echo "$email_content" | sed 's|epoch|'"$(date -d "1970-01-01 UTC + $time_now seconds" +"%d-%m-%Y %T")"'|g'  )"
     email_content="$(echo "$email_content" | sed 's|\"sensor\"|'"${sensor_name}"'|g'      )"
     email_content="$(echo "$email_content" | sed 's|\"desc\"|'"${sensor_desc}"'|g'        )"
     email_content="$(echo "$email_content" | sed 's|\"value\"|'"${sensor_value}"'|g'      )"
-    #echo "$email_content"
-    (echo "$email_content") | /usr/sbin/sendmail pinchasweinstein@gmail.com
+    if [ ! -z "$sensor_value_error" ]; then 
+      email_content="$(echo "$email_content <br> $sensor_value_error")"
 
+
+    fi
+
+    #echo "$email_content"
+#    (echo "$email_content") | /usr/sbin/sendmail pinchasweinstein@gmail.com 
+    (echo "$email_content") | /usr/bin/mail -A $my_path/log.txt --content-type="text/html" -s "Aquarium Alarm for sensor: $sensor_name with value: $sensor_value" -r 'Aquarium Alerts <root@localhost>'  pinchasweinstein@gmail.com
     echo "${time_now},${sensor_value}" >> $my_path/alerts/${sensor_name}.log
 
   fi

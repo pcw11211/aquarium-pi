@@ -1,11 +1,7 @@
-From:  "Aquarium Alarms"
-To: pinchasweinstein@gmail.com
-Subject: Aquarium Alarm for sensor: "sensor" with value: "value"
-Mime-Version: 1.0
-Content-Type: text/html
-
 <h1>Aquarium Alarm Raised</h1>
 
+Date/Time: epoch
+<br>
 Sensor:&nbsp;<b>"sensor"</b>
 <br>
 ("desc")
