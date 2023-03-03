@@ -1,10 +1,10 @@
 CPU (CPU tempriture)
 /opt/aquarium-pi/bin/cpu_temp.sh
 OUT=0
-testing [ 50.8 < 50 ]
-error
+testing [ 49.8 < 50 ]
+good
 echo $value C
-[0;31m50.8 C[0m
+[0;32m49.8 C[0m
 
 DIST (Water Distance Sensor)
 /opt/aquarium-pi/bin/dist_arg.py 10
@@ -15,16 +15,16 @@ error
 
 [0;31m80[0m
 time frequency didnt pass no need to alert
-Next alert in 02:58:38
+Next alert in 02:57:38
 
 THERM (Thermal Sensor)
 /opt/aquarium-pi/bin/therm.sh f
 OUT=0
-testing [ 77.21 < 80 ]
-testing [ 77.21 > 75 ]
+testing [ 77.10 < 80 ]
+testing [ 77.10 > 75 ]
 good
 echo $value F
-[0;32m77.21 F[0m
+[0;32m77.10 F[0m
 
 water_change (Days Since Last Water Change)
 /opt/aquarium-pi/bin/water_change.sh
