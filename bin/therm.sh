@@ -14,9 +14,14 @@
 
 
 #while true; do
+temp_raw="$(cat /sys/bus/w1/devices/28-3c89f64845f4/w1_slave)"
+
+if [ "$?" == "1" ]; then
+  exit 1
+fi
 
 
-temp_c=$(echo "scale=2; $(cat /sys/bus/w1/devices/28-3c89f64845f4/w1_slave | grep 't=' | cut -d '=' -f2) / 1000" |bc)
+temp_c=$(echo "scale=2; $(echo "$temp_raw" | grep 't=' | cut -d '=' -f2) / 1000" |bc)
 
 if [ "$?" == "1" ]; then
   exit 1
