@@ -98,72 +98,87 @@ if ( $_SERVER["SCRIPT_URL"] == "/sensor_values" ){
 //var_dump($_SERVER);
 //echo "</pre>";
 
-echo "<h1>Authors</h1>";
-echo "<ul id=\"authors\"></ul>";
+if ( $_SERVER["SCRIPT_URL"] == "/" ){
+?>
+<html>
+<head>
+<style>
+* {
+  box-sizing: border-box;
+}
+.sensor {
+  float: left;
+  width: 50%;
+  padding : 1em;
+  text-align: center;
+  border: 1px solid black;
+  border-radius: 5%;
+}
+</style>
+</head>
+<body>
+<div id="main">
+<?php
+  $sensor_values=get_sensor_data();
+  foreach ($sensor_values as $sensor_value){
+    echo "<div class=sensor  id=".$sensor_value['name'].">";
+    echo "<div id=".$sensor_value['name']."_name>".$sensor_value['name']."</div>";
+    echo "<div id=".$sensor_value['name']."_desc>".$sensor_value['description']."</div>";
+    echo "<div id=".$sensor_value['name']."_value>".$sensor_value['value']."</div>";
+    echo "<div id=".$sensor_value['name']."_value_age>".$sensor_value['value_age']."</div>";
+    echo "</div>"; 
+  }
+?>
+</div>
 
 
-// Calculate script execution time
-$end_time = microtime(true);
-$execution_time = ($end_time - $start_time);
-echo "<br><br> Execution time of script = ".$execution_time." sec";
+<div>
+<label for='refresh_interval'>Choose refresh interval:</label>
+<select id=refresh_interval onchange="start_interval()">
+<option  value=5>5</option>
+<option  value=10>10</option>
+<option  value=15>15</option>
+<option  value=30>30</option>
+</select>
+</div>
+
+<div>
+<?php
+  // Calculate script execution time
+  $end_time = microtime(true);
+  $execution_time = ($end_time - $start_time);
+  echo "<br><br> Execution time of script = ".$execution_time." sec";
+?>
+</div>
+</body>
+<script>
+
+window.addEventListener('load', function () {
+  start_interval()
+})
+
+function start_interval(){
+  refresh_options = document.getElementById("refresh_interval")
+  if (typeof interval_timer !== 'undefined') {clearInterval(interval_timer)}
+  interval_timer = setInterval(load_data, ( refresh_options[refresh_options.selectedIndex].value * 1000 ));
+}
+
+
+async function load_data(){
+  let url = '/sensor_values';
+  let sensor_data = await (await fetch(url)).json();
+
+ // sensor_data = await load();
+  console.log(sensor_data)
+}
+
+</script>
+<?php
+}
 
 ?>
 
 
-<script>
-
-async function load() {
-    let url = '/sensor_values';
-    let obj = await (await fetch(url)).json();
-    //console.log(obj);
-    //return obj;
-    //sensor_data =  obj;
-}
-
-//const sensor_data = await load();
-//sensor_data = load();
-
-var text
-load().then(res=>{text = res});
-
-//fetch('/sensor_values')
-//  .then((response) => {
-//    return response.json();
-//  })
-//  .then((myJson) => {
-//    //console.log(myJson);
-//    sensor_data = myJson
-//  });
-
-
-console.log(text)
-
-
-
-
-var obj;
-
-fetch('/sensor_values')
-  .then(res => res.json())
-  .then(data => {
-    obj = data;
-   })
-  .then(() => {
-     
-    //console.log(obj);
-   });
-
-console.log(obj)
-
-fetch('/sensor_values')
-    .then(jsonData => jsonData.json())
-    .then(data => printIt(data))
-
-let printIt = (data) => {
-//    console.log(data)
-}
-
-console.log(printIt())
 
 
 
@@ -174,18 +189,6 @@ console.log(printIt())
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-</script>
 
 
 
