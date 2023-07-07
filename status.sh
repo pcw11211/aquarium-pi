@@ -97,6 +97,7 @@ for FILE in $my_path/sensors/*; do
 
 
   #value dispaly setup
+  sensor_org_value=$sensor_value
   sensor_display=$(printSection "value display" $FILE)
   if [ $debuging ]; then echo $sensor_display; fi
   if [ "$sensor_display" != "" ] && [ "$sensor_value" != "NA" ];then
@@ -119,7 +120,7 @@ for FILE in $my_path/sensors/*; do
   
   #save data to logs
   if [ "$logging" == true ]; then
-    echo "${time_now},${sensor_value}" >> $my_path/logs/${sensor_name}.log
+    echo "${time_now},${sensor_org_value}" >> $my_path/logs/${sensor_name}.log
   fi
 
 
