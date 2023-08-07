@@ -84,16 +84,36 @@ function get_sensor_data ()
 function get_sensor_history ($sensor_name, $length=10){
   $logs_dir = realpath(dirname(__FILE__)."/../logs/");
   if (file_exists($logs_dir."/".$sensor_name.".log")){
-    $fp = fopen($logs_dir.'/'.$sensors[$i]['name'].'.log', 'r');
-    var_dump($fp);
-    $pos = -2 - $length; 
-    $line = ''; $c = '';
-    do {
-      $line = $c . $line;
-      fseek($fp, $pos--, SEEK_END);
-      $c = fgetc($fp);
-    } while ($c != "\n");
-    echo $line."<br>";
+    $fp = fopen($logs_dir.'/'.$sensor_name.'.log', 'r');
+    //var_dump($fp);
+    //var_dump($length);
+    $lines=array();
+    while (count($lines)<$length)
+    {
+      (!isset($pos)) ? $pos = -2 : $pos=$pos;
+      //$pos = -2;
+      $line = ''; $c = '';
+      do {
+        $line = $c . $line;
+        fseek($fp, $pos--, SEEK_END);
+        $c = fgetc($fp);
+      } while ($c != "\n");
+    array_push($lines, $line);
+    }
+    array_shift($lines);
+    /*
+    $lines=array();
+    while(!feof($fp))
+    {
+      $line = fgets($fp, 4096);
+      array_push($lines, $line);
+    array_push($lines, $line)  if (count($lines)>5)
+        array_shift($lines);
+    }
+    */
+
+    fclose($fp);
+    return $lines;
     //$sensor_value=explode(",",$line);
     //var_dump($sensor_value);
     //echo "<br>";
@@ -120,15 +140,24 @@ if ( $_SERVER["SCRIPT_URL"] == "/sensor_values" ){
 
 
 if ( $_SERVER["SCRIPT_URL"] == "/sensor_history" ){
-  echo "<pre>";
-  var_dump($_GET);
-  echo "</pre>";
+  //echo "<pre>";
+  //var_dump($_GET);
+  //echo "</pre>";
   if (isset($_GET['sensor']) && isset($_GET['length'])){
-    echo "running function sensor history";
-    $output=get_sensor_history($_GET['sensor'],isset($_GET['length']));
-    echo "<pre>";
-    var_dump($output);
-    echo "</pre>";
+    //echo "running function sensor history<br>";
+    $output=get_sensor_history($_GET['sensor'],$_GET['length']);
+    //echo "<pre>";
+    //var_dump($output);
+    //echo "</pre>";
+
+  
+    $end_time = microtime(true);
+    $execution_time = ($end_time - $start_time);
+    //echo "Execution time of script = ".$execution_time." sec";
+
+    header('Content-Type: application/json; charset=utf-8');
+    echo json_encode($output);
+
     exit();
   } 
 }
@@ -158,8 +187,14 @@ body {
   height: fit-content;
 }
 .sensor {
-  /*float: left;*/
-  display: block;
+  border: 1px solid black;
+  height: fit-content;
+  display:block;
+}
+.sensor_current {
+  float: left;
+  /*display: block;*/
+  display: inline-block;
   height: auto;
   position: relative;
   width: 20%;
@@ -170,6 +205,18 @@ body {
   border-radius: 5px;
   box-shadow: 0px 19px 217px 0px rgba(0,0,0,0.3),0px 15px 12px 0px rgba(0,0,0,0.22);
 }
+.sensor_hist {
+  display: inline-block;
+  height: 100%;
+  width: 70%;
+  padding : 1em;
+  margin : 1em ;
+
+  position: relative;
+  border: 1px solid black;
+  border-radius: 5px;
+  box-shadow: 0px 19px 217px 0px rgba(0,0,0,0.3),0px 15px 12px 0px rgba(0,0,0,0.22);
+} 
 .sensor_value {
   font-weight: bold;
 }
@@ -186,11 +233,15 @@ body {
 <?php
   $sensor_values=get_sensor_data();
   foreach ($sensor_values as $sensor_value){
-    echo "<div class=sensor  id=".$sensor_value['name'].">";
+    echo "<div class=sensor id=".$sensor_value['name'].">";
+    echo "<div class=sensor_current  id=".$sensor_value['name']."_current >";
 //    echo "<div class=sensor_name id=".$sensor_value['name']."_name>".$sensor_value['name']."</div>";
     echo "<div id=".$sensor_value['name']."_desc>".$sensor_value['description']."</div>";
     echo "<div class=sensor_value id=".$sensor_value['name']."_value>"."NA"."</div>";
     echo "<div id=".$sensor_value['name']."_value_age>".$sensor_value['value_age']."</div>";
+    echo "</div>";
+    echo "<div class=sensor_hist id=".$sensor_value['name']."_hist ><canvas id=".$sensor_value['name']."_chart></canvas>";
+    echo "</div>";
     echo "</div>"; 
   }
 ?>
@@ -215,6 +266,9 @@ body {
 ?>
 </div>
 </body>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/moment@2.27.0"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-moment@0.1.1"></script>
 <script>
 
 window.addEventListener('load', function () {
@@ -232,11 +286,12 @@ function start_interval(){
 async function load_data(){
   let url = '/sensor_values';
   let sensors_data = await (await fetch(url)).json();
+  
 
  // sensor_data = await load();
-  //console.log(sensors_data); 
-  sensors_data.forEach(function (item) {
-    console.log(item)
+  console.log(sensors_data); 
+  sensors_data.forEach(async function (item) {
+//    console.log(item)
 
     //add color to value
     test_error="pass"
@@ -244,7 +299,7 @@ async function load_data(){
     tests = tests.concat(item['test'])
 //    console.log(tests)
     tests.forEach(function(test){
-      console.log(test)
+//      console.log(test)
       if ( eval(item['value']+test)) {test_error=test_error}else{test_error="fail"}
     })
     console.log(item['name']+":"+item['value']+":"+test_error)
@@ -257,13 +312,90 @@ async function load_data(){
     }else{
       display_val=item['value']
     }
-    
+
     document.getElementById(item['name']+"_value").innerHTML=display_val;
-    document.getElementById(item['name']+"_value_age").innerHTML=item['value_age']
+   // value_age=
+    document.getElementById(item['name']+"_value_age").innerHTML=moment(new Date(item['value_age']*1000)).format('hh:mm:ss a');
     //copy.push(item + item+2)
+
+
+    //get sensor history
+    let url_hist = "/sensor_history?sensor="+item['name']+"&length=50";
+    //console.log(url_hist)
+    let sensors_hist = await (await fetch(url_hist)).json();
+
+    
+    const xValues=[]
+    const yValues=[]
+    sensors_hist.forEach(function (hist_item) {
+        xValues.push(new Date(hist_item.split(",")[0] * 1000))
+        yValues.push(hist_item.split(",")[1])
+    })
+
+    
+    //const xValues=[1,2,3,4,5,6,7,8,9]
+    //minValue = Math.min(...yValues);
+    //maxValue = Math.max(...yValues);
+    //span=((maxValue - minValue) * 1 + 2 )
+    //minValue = (minValue - span).toFixed(0)
+    //maxValue = (maxValue + span).toFixed(0)
+
+
+    console.log("sensors_hist="+sensors_hist)
+    //console.log("xValues="+xValues)
+    //console.log("yValues="+yValues)
+    //console.log("minValue="+minValue)
+    //console.log("maxValue="+maxValue)
+
+
+    //console.log(sensors_hist)
+    const ctx = document.getElementById(item['name']+'_chart');
+    new Chart(ctx, {
+      type: 'line',
+      data: {
+          labels: xValues,
+          datasets: [{
+            fill: false,
+            lineTension: 0,
+            //backgroundColor: "rgba(0,0,255,1.0)",
+            //borderColor: "rgba(0,0,255,0.1)",
+            data: yValues
+          }]
+      },
+      options: {
+        plugins: {
+          legend: {
+            display: false
+          }
+        },
+        //legend: {display: false},
+        responsive: true,
+        aspectRatio: 5, 
+        //maintainAspectRatio: false,
+        radius: 2,
+        borderWidth: 1,
+        scales: {
+          y: {
+            //min: minValue,
+            //max: maxValue,
+          },
+          x: {
+            display: true,
+            type: "time",
+            reverse: true,
+          //  time: {
+          //          unit: 'minute'
+          //      }
+          } 
+        }
+      }
+    });
+
   });
 }
 </script>
+
+
 <?php
 }
 
