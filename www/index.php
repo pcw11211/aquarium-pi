@@ -240,7 +240,7 @@ body {
     echo "<div class=sensor_value id=".$sensor_value['name']."_value>"."NA"."</div>";
     echo "<div id=".$sensor_value['name']."_value_age>".$sensor_value['value_age']."</div>";
     echo "</div>";
-    echo "<div class=sensor_hist id=".$sensor_value['name']."_hist ><canvas id=".$sensor_value['name']."_chart></canvas>";
+    echo "<div class=sensor_hist id=".$sensor_value['name']."_hist ><canvas id=".$sensor_value['name']."_canvas></canvas>";
     echo "</div>";
     echo "</div>"; 
   }
@@ -320,16 +320,33 @@ async function load_data(){
 
 
     //get sensor history
-    let url_hist = "/sensor_history?sensor="+item['name']+"&length=50";
+    let url_hist = "/sensor_history?sensor="+item['name']+"&length=80";
     //console.log(url_hist)
     let sensors_hist = await (await fetch(url_hist)).json();
 
     
     const xValues=[]
     const yValues=[]
+    const pointBackgroundColors=[]
+    hist_tests=[]
+    hist_tests = hist_tests.concat(item['test'])
+
     sensors_hist.forEach(function (hist_item) {
         xValues.push(new Date(hist_item.split(",")[0] * 1000))
-        yValues.push(hist_item.split(",")[1])
+        hist_item_value=hist_item.split(",")[1]
+        yValues.push(hist_item_value)
+     
+        //add color to value
+        hist_test_error="green"
+        //hist_tests=[]
+        //tests = tests.concat(item['test'])
+  //    console.log(tests)
+        hist_tests.forEach(function(test){
+//      console.log(test)
+           if ( eval(hist_item_value+test)) {hist_test_error=hist_test_error}else{hist_test_error="red"}
+        })
+        pointBackgroundColors.push(hist_test_error)
+
     })
 
     
@@ -341,7 +358,26 @@ async function load_data(){
     //maxValue = (maxValue + span).toFixed(0)
 
 
-    console.log("sensors_hist="+sensors_hist)
+    //console.log("sensors_hist="+sensors_hist)
+    if (typeof window[item['name']+"_chart"] !== 'undefined'){
+        //console.log( window[item['name']+"_chart"].config.data.labels[0] )
+        //console.log( xValues[0] ) 
+        //console.log( window[item['name']+"_chart"].config.data.labels[0].getTime() !== xValues[0].getTime() )
+        if (  window[item['name']+"_chart"].config.data.labels[0].getTime() !== xValues[0].getTime() ){
+          //window[item['name']+"_chart"].destroy();
+            console.log( "updating chart: "+item['name']+"_chart")
+            window[item['name']+"_chart"].config.data.labels.pop()
+            window[item['name']+"_chart"].config.data.labels.unshift(xValues[0])
+            window[item['name']+"_chart"].config.data.datasets[0].data.pop()
+            window[item['name']+"_chart"].config.data.datasets[0].data.unshift(yValues[0])
+            window[item['name']+"_chart"].config.data.datasets[0].backgroundColor.pop()
+            window[item['name']+"_chart"].config.data.datasets[0].backgroundColor.unshift(hist_test_error)
+            window[item['name']+"_chart"].update();
+            return
+        }else{
+            return
+        }
+    }
     //console.log("xValues="+xValues)
     //console.log("yValues="+yValues)
     //console.log("minValue="+minValue)
@@ -349,8 +385,8 @@ async function load_data(){
 
 
     //console.log(sensors_hist)
-    const ctx = document.getElementById(item['name']+'_chart');
-    new Chart(ctx, {
+    const ctx = document.getElementById(item['name']+'_canvas');
+    window[item['name']+"_chart"] =  new Chart(ctx, {
       type: 'line',
       data: {
           labels: xValues,
@@ -359,7 +395,8 @@ async function load_data(){
             lineTension: 0,
             //backgroundColor: "rgba(0,0,255,1.0)",
             //borderColor: "rgba(0,0,255,0.1)",
-            data: yValues
+            data: yValues,
+            backgroundColor: pointBackgroundColors,
           }]
       },
       options: {
@@ -378,6 +415,7 @@ async function load_data(){
           y: {
             //min: minValue,
             //max: maxValue,
+             //reverse: true,
           },
           x: {
             display: true,
