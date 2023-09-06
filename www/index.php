@@ -59,15 +59,24 @@ function get_sensor_data ()
   //var_dump($sensor_value);
     if (file_exists($logs_dir."/".$sensors[$i]['name'].'.log')){
       $fp = fopen($logs_dir.'/'.$sensors[$i]['name'].'.log', 'r');
-      //var_dump($fp);
+
+
+/*
       $pos = -2; $line = ''; $c = '';
       do {
         $line = $c . $line;
         fseek($fp, $pos--, SEEK_END);
         $c = fgetc($fp);
       } while ($c != "\n");
-      //echo $line."<br>";
       $sensor_value=explode(",",$line);
+*/
+
+      fseek($fp, -50, SEEK_END);
+      $lastlines = fread($fp,65535);
+      $lastlines_arr = explode(PHP_EOL,$lastlines);
+      $lastline = $lastlines_arr[count($lastlines_arr) -2];
+      $sensor_value=explode(",",$lastline);
+
       //var_dump($sensor_value);
       //echo "<br>";
       $sensors[$i]['value']=$sensor_value[1];
@@ -87,9 +96,14 @@ function get_sensor_history ($sensor_name, $length=10){
     $fp = fopen($logs_dir.'/'.$sensor_name.'.log', 'r');
     //var_dump($fp);
     //var_dump($length);
+    $file_size=filesize($logs_dir."/".$sensor_name.".log");
     $lines=array();
-    while (count($lines)<$length)
+    $read_data='';
+    $chunk=512;
+    $pos = 0;
+    while (count($lines)<$length && abs($pos) < $file_size )
     {
+    /*
       (!isset($pos)) ? $pos = -2 : $pos=$pos;
       //$pos = -2;
       $line = ''; $c = '';
@@ -99,6 +113,14 @@ function get_sensor_history ($sensor_name, $length=10){
         $c = fgetc($fp);
       } while ($c != "\n");
     array_push($lines, $line);
+    */
+      $pos=($pos - $chunk);
+//      var_dump(abs($pos));
+//      var_dump($file_size);
+      fseek($fp, $pos, SEEK_END);
+      $read_data=fread($fp, abs($pos));
+      $lines=explode(PHP_EOL,$read_data);
+      array_pop($lines);
     }
     array_shift($lines);
     /*
