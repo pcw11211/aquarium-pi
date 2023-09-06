@@ -115,10 +115,20 @@ function get_sensor_history ($sensor_name, $length=10){
     array_push($lines, $line);
     */
       $pos=($pos - $chunk);
-//      var_dump(abs($pos));
-//      var_dump($file_size);
-      fseek($fp, $pos, SEEK_END);
-      $read_data=fread($fp, abs($pos));
+      //var_dump(abs($pos));
+      //var_dump($file_size);
+      $fseek_out=fseek($fp, $pos, SEEK_END);
+      //var_dump($fseek_out);
+      if ($fseek_out == 0){
+        //fseek($fp, $pos, SEEK_END);
+        $read_data=fread($fp, abs($pos));
+      }else{
+        fseek($fp,0);
+        $read_data=fread($fp, $file_size);
+      }
+      
+      //$read_data=fread($fp, abs($pos));
+      //var_dump($read_data);
       $lines=explode(PHP_EOL,$read_data);
       array_pop($lines);
     }
